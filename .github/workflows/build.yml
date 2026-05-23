@@ -1,4 +1,4 @@
-name: Build & Release APK
+name: Build & Send APK to Telegram
 on: [push]
 jobs:
   build:
@@ -10,11 +10,10 @@ jobs:
           flutter-version: '3.41.9'
       - run: flutter create .
       - run: flutter build apk --debug
-      - name: Upload APK to GitHub Releases
-        uses: softprops/action-gh-release@v2
+      - name: Send APK to Telegram
+        uses: appleboy/telegram-action@master
         with:
-          tag_name: build-${{ github.run_number }}
-          name: "Build ${{ github.run_number }}"
-          files: build/app/outputs/flutter-apk/app-debug.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          document: build/app/outputs/flutter-apk/app-debug.apk
+          message: "🚀 لعبة شطر - بناء جديد!"
