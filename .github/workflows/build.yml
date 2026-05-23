@@ -9,6 +9,12 @@ jobs:
         with:
           flutter-version: '3.41.9'
       - run: flutter create .
+      - name: Commit & Push generated files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --staged --quiet || (git commit -m "توليد مجلدات المشروع تلقائياً" && git push)
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
         with:
