@@ -1,4 +1,4 @@
-name: Build Shatr Game
+name: Build & Send APK to Telegram
 on: [push]
 jobs:
   build:
@@ -9,14 +9,11 @@ jobs:
         with:
           flutter-version: '3.41.9'
       - run: flutter create .
-      - name: Commit & Push generated files
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add -A
-          git diff --staged --quiet || (git commit -m "توليد مجلدات المشروع تلقائياً" && git push)
       - run: flutter build apk --debug
-      - uses: actions/upload-artifact@v4
+      - name: Send APK to Telegram
+        uses: appleboy/telegram-action@v1.0.0
         with:
-          name: shatr-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          document: build/app/outputs/flutter-apk/app-debug.apk
+          message: "🚀 لعبة شطر - بناء جديد!"
