@@ -1,4 +1,4 @@
-name: Build & Send APK to Telegram
+name: Build & Release with Notifications
 on: [push]
 jobs:
   build:
@@ -10,10 +10,36 @@ jobs:
           flutter-version: '3.41.9'
       - run: flutter create .
       - run: flutter build apk --debug
-      - name: Send APK to Telegram
+
+      - name: Upload APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "Build ${{ github.run_number }}"
+          files: build/app/outputs/flutter-apk/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # إشعار النجاح
+      - name: Notify Success
+        if: success()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          document: build/app/outputs/flutter-apk/app-debug.apk
-          message: "🚀 لعبة شطر - بناء جديد!"
+          message: |
+            ✅ بناء ناجح!
+            📦 الإصدار: Build ${{ github.run_number }}
+            🔗 التحميل من Releases: https://github.com/${{ github.repository }}/releases
+
+      # إشعار الفشل
+      - name: Notify Failure
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ❌ فشل بناء!
+            🔢 رقم التشغيلة: ${{ github.run_number }}
+            🔗 سجل الأخطاء: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
