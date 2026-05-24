@@ -46,7 +46,6 @@ class _GameMainScreenState extends State<GameMainScreen> {
           ),
           
           // 2. المنطقة التفاعلية (صندوق على الجدار بجانب الباب تماماً)
-          // قمت بتحديد موقع الصندوق ليكون فوق جهاز التحكم الصغير الموجود بالخلفية الأصلية
           Positioned(
             left: MediaQuery.of(context).size.width * 0.02, // على الجدار الأيسر
             top: MediaQuery.of(context).size.height * 0.45,  // في المنتصف عمودياً
@@ -74,7 +73,7 @@ class _GameMainScreenState extends State<GameMainScreen> {
           // 3. شاشة النجاح (تظهر فقط إذا أدخل اللاعب الكود الصحيح)
           if (isVaultOpened)
             Container(
-              color: Colors.black90,
+              color: Colors.black87, // تم تصحيح اللون هنا
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -242,7 +241,7 @@ class _KeypadPuzzleWidgetState extends State<KeypadPuzzleWidget> {
             Expanded(
               flex: 2,
               child: Container(
-                color: Colors.black25,
+                color: Colors.black26, // تم تصحيح اللون هنا
                 padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
