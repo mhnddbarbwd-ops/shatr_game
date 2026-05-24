@@ -1,5 +1,5 @@
 name: shatr_game
-description: لعبة شطر - Shatr Game
+description: "لعبة شطر - Shatr Game"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -18,3 +18,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  # هنا تم إضافة مسار الصور
+  assets:
+    - assets/images/agent2_bg.png
+    - assets/images/agent_bg.png
