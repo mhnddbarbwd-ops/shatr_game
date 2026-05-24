@@ -3,232 +3,216 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // إخفاء شريط الإشعارات لجعل اللعبة بملء الشاشة
+  // إجبار اللعبة على الوضع الأفقي وإخفاء شريط الإشعارات
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  runApp(const ShatrGameApp());
+  runApp(const CyberGameApp());
 }
 
-class ShatrGameApp extends StatelessWidget {
-  const ShatrGameApp({super.key});
+class CyberGameApp extends StatelessWidget {
+  const CyberGameApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Shatr Game',
+      title: 'Dark Cipher',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(), // ثيم مظلم يناسب أجواء اللعبة
-      home: const GameMainScreen(),
-    );
-  }
-}
-
-class GameMainScreen extends StatefulWidget {
-  const GameMainScreen({super.key});
-
-  @override
-  State<GameMainScreen> createState() => _GameMainScreenState();
-}
-
-class _GameMainScreenState extends State<GameMainScreen> {
-  bool isVaultOpened = false; // متغير يحدد هل نجح اللاعب في فتح الخزنة أم لا
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // 1. خلفية الممر المظلم وباب الخزنة (تملأ الشاشة بالكامل)
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/agent2_bg.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          
-          // 2. المنطقة التفاعلية (صندوق على الجدار بجانب الباب تماماً)
-          Positioned(
-            left: MediaQuery.of(context).size.width * 0.02, // على الجدار الأيسر
-            top: MediaQuery.of(context).size.height * 0.45,  // في المنتصف عمودياً
-            child: GestureDetector(
-              onTap: () {
-                // عند الضغط هنا.. يفتح لغز الكيبورد فوراً!
-                _openKeypadInterface(context);
-              },
-              child: Container(
-                width: 70,
-                height: 110,
-                // وضعنا لون أحمر شفاف جداً لتراه الآن وتعرف أين تضغط، لاحقاً سنجعله مخفي تماماً!
-                color: Colors.red.withOpacity(0.3), 
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.vibration, color: Colors.white, size: 20),
-                    Text("اضغط هنا", style: TextStyle(fontSize: 8, color: Colors.white)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // 3. شاشة النجاح (تظهر فقط إذا أدخل اللاعب الكود الصحيح)
-          if (isVaultOpened)
-            Container(
-              color: Colors.black87, // تم تصحيح اللون هنا
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.lock_open, color: Colors.green, size: 100),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'أحسنت أيها العميل! تم فك الشفرة وفتح الخزنة بنجاح 🎉',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade800),
-                      onPressed: () {
-                        setState(() {
-                          isVaultOpened = false; // إعادة اللعبة من جديد
-                        });
-                      },
-                      child: const Text('إعادة المحاولة', style: TextStyle(color: Colors.white)),
-                    )
-                  ],
-                ),
-              ),
-            ),
-        ],
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xFF09090B), // أسود داكن جداً
+        fontFamily: 'monospace', // خط المبرمجين الأساسي
       ),
+      home: const TerminalScreen(),
     );
   }
+}
 
-  // دالة تفتح واجهة التحكم كـ Popup تفاعلي فوق الشاشة
-  void _openKeypadInterface(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true, // يسمح للاعب بالخروج لو ضغط خارج الصندوق
-      builder: (context) {
-        return const KeypadPuzzleWidget();
-      },
-    ).then((isSuccess) {
-      // إذا رجعت الواجهة بكلمة true، يعني اللغز تم حله!
-      if (isSuccess == true) {
-        setState(() {
-          isVaultOpened = true;
-        });
+class TerminalScreen extends StatefulWidget {
+  const TerminalScreen({super.key});
+
+  @override
+  State<TerminalScreen> createState() => _TerminalScreenState();
+}
+
+class _TerminalScreenState extends State<TerminalScreen> {
+  String inputCode = "";
+  final String targetCode = "1972";
+  List<String> systemLogs = [
+    "> SYSTEM BOOT SEQUENCE INITIATED...",
+    "> ENCRYPTION LEVEL: MAXIMUM",
+    "> WAITING FOR OVERRIDE CODE...",
+  ];
+  
+  bool isError = false;
+  bool isSuccess = false;
+
+  void _handleKeyPress(String key) {
+    if (isSuccess || isError) return; // منع الإدخال أثناء عرض النتيجة
+
+    setState(() {
+      if (inputCode.length < 4) {
+        inputCode += key;
+        systemLogs.add("> INPUT DETECTED: *");
+      }
+
+      if (inputCode.length == 4) {
+        _verifyCode();
       }
     });
   }
-}
 
-// كلاس واجهة لغز الكيبورد والأسلاك المدخلة
-class KeypadPuzzleWidget extends StatefulWidget {
-  const KeypadPuzzleWidget({super.key});
-
-  @override
-  State<KeypadPuzzleWidget> createState() => _KeypadPuzzleWidgetState();
-}
-
-class _KeypadPuzzleWidgetState extends State<KeypadPuzzleWidget> {
-  String currentCode = ""; // الأرقام التي يكتبها اللاعب حالياً
-  final String correctCode = "1972"; // الشفرة السرية الصحيحة لفتح اللغز
-
-  void _pressNumber(String number) {
-    if (currentCode.length < 4) {
+  void _verifyCode() {
+    if (inputCode == targetCode) {
       setState(() {
-        currentCode += number;
+        isSuccess = true;
+        systemLogs.add("> CODE ACCEPTED.");
+        systemLogs.add("> SYSTEM UNLOCKED.");
+      });
+    } else {
+      setState(() {
+        isError = true;
+        systemLogs.add("> ERROR: INVALID OVERRIDE CODE!");
+        systemLogs.add("> SYSTEM LOCKDOWN IN 3... 2... 1...");
       });
 
-      // التحقق عند اكتمال 4 أرقام
-      if (currentCode == correctCode) {
-        // إذا الكود صحيح، ننتظر نصف ثانية ثم نغلق الواجهة بنجاح
-        Future.delayed(const Duration(milliseconds: 500), () {
-          Navigator.of(context).pop(true);
-        });
-      } else if (currentCode.length == 4) {
-        // إذا الكود خاطئ، نعطي تنبيه ونمسح الشاشة بعد ثانية
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ شفرة خاطئة! تم قفل النظام مؤقتاً.'), duration: Duration(seconds: 1)),
-        );
-        Future.delayed(const Duration(seconds: 1), () {
+      // إعادة تعيين النظام بعد ثانيتين في حال الخطأ
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
           setState(() {
-            currentCode = "";
+            isError = false;
+            inputCode = "";
+            systemLogs.clear();
+            systemLogs.addAll([
+              "> SYSTEM RESET SUCCESSFUL.",
+              "> WAITING FOR OVERRIDE CODE...",
+            ]);
           });
-        });
-      }
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 380,
-        height: 280,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade800, width: 2),
+    // تحديد لون الواجهة بناءً على الحالة (أخضر للنجاح، أحمر للخطأ، سيان للوضع الطبيعي)
+    Color mainColor = isSuccess 
+        ? Colors.greenAccent 
+        : (isError ? Colors.redAccent : Colors.cyanAccent);
+
+    return Scaffold(
+      body: Container(
+        // خلفية متدرجة تعطي إحساس الشاشة القديمة
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            colors: [Color(0xFF1A1A24), Color(0xFF09090B)],
+            radius: 1.2,
+          ),
         ),
-        child: Row(
-          children: [
-            // القسم الأيسر: الأزرار والشاشة الرقمية للحساب
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  children: [
-                    // الشاشة الرقمية الصغيرة المضيئة باللون الأحمر
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.red.shade900),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              // القسم الأيسر: شاشة الأوامر (Terminal Logs)
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    border: Border.all(color: mainColor.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: mainColor.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "TERMINAL v1.0.0 -- STATUS: ${isSuccess ? 'UNLOCKED' : (isError ? 'LOCKED' : 'SECURE')}",
+                        style: TextStyle(color: mainColor, fontWeight: FontWeight.bold),
                       ),
-                      child: Text(
-                        currentCode.padRight(4, '_'), // يظهر شرطات مكان الأرقام الفارغة
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 22,
-                          fontFamily: 'monospace',
-                          letterSpacing: 8,
+                      const Divider(color: Colors.white24),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: systemLogs.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                              child: Text(
+                                systemLogs[index],
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            );
+                          },
                         ),
                       ),
+                      // مؤشر الإدخال
+                      Text(
+                        "> $inputCode${inputCode.length < 4 ? '_' : ''}",
+                        style: TextStyle(
+                          color: mainColor,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 20),
+
+              // القسم الأيمن: لوحة المفاتيح
+              Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "INPUT OVERRIDE",
+                      style: TextStyle(color: mainColor, letterSpacing: 2),
                     ),
                     const SizedBox(height: 10),
-                    // أزرار الكيبورد الحقيقية القابلة للنقر!
                     Expanded(
                       child: GridView.builder(
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
-                          mainAxisSpacing: 6,
-                          crossAxisSpacing: 6,
-                          childAspectRatio: 1.6,
+                          childAspectRatio: 1.5,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
                         ),
                         itemCount: 12,
                         itemBuilder: (context, index) {
-                          List<String> labels = [
-                            "1", "2", "3",
-                            "4", "5", "6",
-                            "7", "8", "9",
-                            "*", "0", "#"
+                          List<String> keys = [
+                            '1', '2', '3',
+                            '4', '5', '6',
+                            '7', '8', '9',
+                            'SYS', '0', 'CLR'
                           ];
-                          String btnLabel = labels[index];
-                          return ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2A2A2A),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                              padding: EdgeInsets.zero,
-                            ),
-                            onPressed: () => _pressNumber(btnLabel),
-                            child: Text(btnLabel, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                          return CyberButton(
+                            label: keys[index],
+                            color: mainColor,
+                            onTap: () {
+                              if (keys[index] == 'CLR') {
+                                setState(() {
+                                  inputCode = "";
+                                  systemLogs.add("> INPUT CLEARED.");
+                                });
+                              } else if (keys[index] == 'SYS') {
+                                // زر شكلي حالياً
+                              } else {
+                                _handleKeyPress(keys[index]);
+                              }
+                            },
                           );
                         },
                       ),
@@ -236,49 +220,70 @@ class _KeypadPuzzleWidgetState extends State<KeypadPuzzleWidget> {
                   ],
                 ),
               ),
-            ),
-            // القسم الأيمن: واجهة الأسلاك الملونة
-            Expanded(
-              flex: 2,
-              child: Container(
-                color: Colors.black26, // تم تصحيح اللون هنا
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    const Text("دائرة الأسلاك", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                    _buildWire(Colors.red, "الأحمر"),
-                    _buildWire(Colors.blue, "الأزرق"),
-                    _buildWire(Colors.green, "الأخضر"),
-                    _buildWire(Colors.amber, "الأصفر"),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  // دالة بناء سلك تفاعلي يعطيك تنبيه عند لمسه
-  Widget _buildWire(Color color, String wireName) {
+// كلاس مخصص لزر بستايل سايبر بانك (إطار مضيء)
+class CyberButton extends StatefulWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const CyberButton({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<CyberButton> createState() => _CyberButtonState();
+}
+
+class _CyberButtonState extends State<CyberButton> {
+  bool isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✂️ قمت بلمس السلك $wireName! (سنبرمج لغز قطع الأسلاك في التحديث القادم)'), duration: const Duration(milliseconds: 800)),
-        );
+      onTapDown: (_) => setState(() => isPressed = true),
+      onTapUp: (_) {
+        setState(() => isPressed = false);
+        widget.onTap();
       },
-      child: Container(
-        width: double.infinity,
-        height: 22,
+      onTapCancel: () => setState(() => isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color, width: 1.5),
+          color: isPressed ? widget.color.withOpacity(0.2) : Colors.transparent,
+          border: Border.all(
+            color: widget.color.withOpacity(isPressed ? 1.0 : 0.5),
+            width: 2,
+          ),
+          boxShadow: isPressed
+              ? [
+                  BoxShadow(
+                    color: widget.color.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  )
+                ]
+              : [],
         ),
         child: Center(
-          child: Text(wireName, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: isPressed ? Colors.white : widget.color,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
